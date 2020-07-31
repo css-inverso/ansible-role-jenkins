@@ -61,6 +61,9 @@ strategy.add(hudson.model.Item.DISCOVER, 'authenticated')
 strategy.add(hudson.model.Item.DISCOVER, '{{ jenkins_ad_group_admin }}')
 strategy.add(hudson.model.Item.DISCOVER, '{{ jenkins_ad_group_developers }}')
 strategy.add(hudson.model.Item.DISCOVER, '{{ jenkins_ad_group_users }}')
+{% if jenkins_ad_allow_anonymous  == 'yes' %}
+strategy.add(hudson.model.Item.READ, 'anonymous')
+{% endif %}
 strategy.add(hudson.model.Item.READ, 'authenticated')
 strategy.add(hudson.model.Item.READ, '{{ jenkins_ad_group_admin }}')
 strategy.add(hudson.model.Item.READ, '{{ jenkins_ad_group_developers }}')
