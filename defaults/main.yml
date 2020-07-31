@@ -10,7 +10,7 @@ jenkins_plugins                      : '{{ jenkins_default_plugins }}'
 jenkins_update_plugins               : 'yes'
 
 jenkins_download_baseurl             : ''
-jenkins_download_file                : 'jenkins_{{ jenkins_version }}'
+jenkins_download_file                : 'jenkins_{{ jenkins_version }}.war'
 jenkins_download_folder              : '/tmp'
 
 jenkins_user                         : 'jenkins'
