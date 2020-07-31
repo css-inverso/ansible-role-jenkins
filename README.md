@@ -10,8 +10,10 @@ Requirements
 Role Variables
 --------------
 
-    jenkins_version: '2.235.1'
-Set the jenkins version to install
+    jenkins_version: '2.235.3'
+    jenkins_version: 'latest'
+Set the jenkins version to install.
+The latest tag is set by the public Jenkins repository: http://mirrors.jenkins.io/war-stable/
 
 
     jenkins_plugins: '{{ jenkins_default_plugins }}'

@@ -1,18 +1,11 @@
 ---
-## SVN INFORMATION
-#
-# Revision  :  $Rev: 7034 $
-# Autor     :  $Author: jzi $
-# Datum     :  $Date: 2020-07-24 14:51:10 +0200 (Fr, 24. Jul 2020) $
-# URL       :  $HeadURL: https://repo01.inverso.local/svn/ansible/branches/IWADMIN-2172/roles/roles_inverso/inverso.jenkins/defaults/main.yml $
-# 
 
-jenkins_version                      : ~
+jenkins_version                      : '2.235.3'
 jenkins_default_plugins              :
   - "active-directory"
 jenkins_plugins                      : '{{ jenkins_default_plugins }}'
 
-# FIXME: the role should not updated plugins by default on each run
+# FIXME: the role should not update plugins by default on each run
 # this is set to 'yes' to preserve the old, known behaviour, but should be 'no' here and explicitly set as playbook extra_var
 jenkins_update_plugins               : 'yes'
 
