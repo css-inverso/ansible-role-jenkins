@@ -1,0 +1,9 @@
+#!groovy
+import jenkins.model.*
+
+def instance = Jenkins.getInstance()
+
+{% for key, value in jenkins_systemproperties.items() %}
+{{ key }}{{ value }}
+{% endfor %}
+

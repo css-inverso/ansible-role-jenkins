@@ -1,0 +1,25 @@
+#!groovy
+import jenkins.model.*
+
+{% if jenkins_proxy_state == 'absent' %}
+Jenkins.getInstance().proxy = null
+Jenkins.getInstance().save()
+{% endif %}
+{# 
+
+#}
+{% if jenkins_proxy_state == 'present' %}
+final String name = "{{ jenkins_proxy_name }}"
+final int port = {{ jenkins_proxy_port }}
+{% if jenkins_proxy_username %}
+final String userName = "{{ jenkins_proxy_username }}"
+{% endif %}
+{% if jenkins_proxy_password %}
+final String password = "{{ jenkins_proxy_password }}"
+{% endif %}
+final String noProxyHost = "{{ jenkins_proxy_nonProxyHosts }}"
+
+final def pc = new hudson.ProxyConfiguration(name, port, userName, password, noProxyHost)
+Jenkins.getInstance().setProxy(pc)
+pc.save()
+{% endif %}

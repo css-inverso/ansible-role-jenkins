@@ -1,0 +1,18 @@
+# MANAGED BY ANSIBLE
+
+[Unit]
+Description=Jenkins Server
+After=network.target
+Requires=network.target
+
+[Service]
+Type=simple
+User={{ jenkins_user }}
+Environment="JENKINS_HOME={{ jenkins_home }}"
+{% for key, value in jenkins_service_env.items() %}
+Environment="{{ key }}={{ value }}"
+{% endfor %}
+ExecStart={{ jenkins_java_lib }} {{ jenkins_java_opts }} -jar {{ jenkins_dir }}/{{ jenkins_war_file }} --httpPort={{ jenkins_local_http_port }} --httpListenAddress={{ jenkins_httpListenAddress }} --prefix={{ jenkins_webappcontextpath }} {{ jenkins_args }}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+---
+
+- name: check required variables
+  assert:
+    that:
+      - jenkins_api_url          | mandatory
+      - jenkins_user             | mandatory
+      - jenkins_group            | mandatory
+      - jenkins_home             | mandatory
+      - jenkins_admin_username   | mandatory
+      - jenkins_admin_password   | mandatory
+  tags: ['varcheck']
+
+- name: Ensure Admin API Token is generated
+  uri:
+    url: '{{ jenkins_api_url }}/user/{{ jenkins_admin_username }}/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken'
+    force_basic_auth: yes
+    user: '{{ jenkins_admin_username }}'
+    password: '{{ jenkins_admin_password }}'
+    method: POST
+    headers: '{{ jenkins_crumb_header }}'
+    body: 'newTokenName={{ jenkins_admin_username }}_api_token'
+    status_code: 200
+  register: _result_jenkins_api_token
+
+- name: define jenkins admin token
+  set_fact:
+    jenkins_admin_token: '{{ jenkins_admin_username }}:{{ _result_jenkins_api_token.json.data.tokenValue }}'

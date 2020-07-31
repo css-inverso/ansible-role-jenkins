@@ -1,0 +1,5 @@
+#!groovy
+import jenkins.model.*
+
+def instance = Jenkins.getInstance()
+instance.pluginManager.doCheckUpdatesServer()

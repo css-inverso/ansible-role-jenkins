@@ -1,0 +1,23 @@
+---
+
+- name: Ensure Jenkins Admin Crumb Header is available
+  uri:
+    url: '{{ jenkins_api_url }}/crumbIssuer/api/json'
+    force_basic_auth: yes
+    user: '{{ jenkins_admin_username }}'
+    password: '{{ jenkins_admin_password }}'
+    method: GET
+    status_code: 200
+  register: _result_jenkins_crumb
+  retries: 5
+  delay: 3
+  until: _result_jenkins_crumb is not failed
+
+- name: show crumb result
+  debug: var=_result_jenkins_crumb
+
+- name: define api crumb and cookie
+  set_fact:
+    jenkins_crumb_header:
+      Jenkins-Crumb: '{{ _result_jenkins_crumb.json.crumb }}'
+      Cookie: '{{ _result_jenkins_crumb.set_cookie | default("") }}'

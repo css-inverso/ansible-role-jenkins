@@ -1,0 +1,42 @@
+---
+
+
+- name: check required variables
+  assert:
+    that:
+      - jenkins_user             | mandatory
+      - jenkins_group            | mandatory
+      - jenkins_home             | mandatory
+      - jenkins_ad_configure     | mandatory
+  tags: ['varcheck']
+
+- name: Ensure Active Directory configuration is present
+  template:
+    src: 'groovy/configure_active_directory.groovy.j2'
+    dest: '{{ jenkins_home }}/init.groovy.d/configure_active_directory.groovy'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  when: jenkins_ad_configure == 'yes'
+  notify: restart jenkins
+
+- name: Ensure Authorization configuration is present
+  template:
+    src: 'groovy/configure_authorizationstrategy_security.groovy.j2'
+    dest: '{{ jenkins_home }}/init.groovy.d/configure_authorizationstrategy_security.groovy'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  when:
+    - jenkins_ad_configure == 'yes'
+    - jenkins_ad_group_admin is defined
+    - jenkins_ad_group_developers is defined
+    - jenkins_ad_group_users is defined
+  notify: restart jenkins
+
+- name: Ensure docker plugin configuration is present
+  template:
+    src: 'groovy/configure_docker_plugin.groovy.j2'
+    dest: '{{ jenkins_home }}/init.groovy.d/configure_docker_plugin.groovy'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  when: jenkins_plugin_docker_configure == 'yes'
+  notify: restart jenkins

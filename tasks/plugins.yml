@@ -1,0 +1,68 @@
+---
+
+- name: check required variables
+  assert:
+    that:
+      - jenkins_cli_cmd          | mandatory
+      - jenkins_home             | mandatory
+      - jenkins_admin_username   | mandatory
+      - jenkins_admin_password   | mandatory
+      - jenkins_plugins          is iterable
+      - jenkins_update_plugins   in ['yes', 'no']
+  tags: ['varcheck']
+
+- name: ensure jenkins is running before requesting safe restart
+  systemd:
+    name: jenkins
+    state: started
+
+- name: generate jenkins crumb
+  include: api_generate_crumb.yml
+
+- name: check updates server
+  uri:
+    url: '{{ jenkins_api_url }}/pluginManager/checkUpdatesServer'
+    force_basic_auth: yes
+    user: '{{ jenkins_admin_username }}'
+    password: '{{ jenkins_admin_password }}'
+    method: POST
+    headers: '{{ jenkins_crumb_header }}'
+    status_code: 302
+  register: _updates_result
+  retries: 3
+  delay: 3
+  until: _updates_result is not failed
+
+- name: list installed plugins
+  shell: "{{ jenkins_cli_cmd }} -auth {{ jenkins_admin_token }} list-plugins | cut -f 1 -d ' '"
+  register: _result_plugins_installed
+  changed_when: false
+
+- name: install/update plugins
+  shell: "{{ jenkins_cli_cmd }} -auth {{ jenkins_admin_token }} install-plugin {{ item }}"
+  when: _result_plugins_installed.stdout.find( item ) == -1
+  with_items: '{{ jenkins_plugins }}'
+  register: _plugin_install_result
+  retries: 3
+  delay: 3
+  until: _plugin_install_result is not failed
+  ignore_errors: yes
+  notify:
+    - restart jenkins
+
+- name: list plugins to be updated
+  shell: "{{ jenkins_cli_cmd }} -auth {{ jenkins_admin_token }} list-plugins | grep ')$' | cut -f 1 -d ' ' | awk 1 ORS=' '"
+  register: _result_plugin_updates
+  changed_when: false
+
+- name: update plugins
+  shell: "{{ jenkins_cli_cmd }} -auth {{ jenkins_admin_token }} install-plugin {{ item }}"
+  with_items: '{{ _result_plugin_updates.stdout.split() }}'
+  when: _result_plugin_updates.stdout != '' and jenkins_update_plugins == 'yes'
+  register: _result_update_plugins
+  retries: 3
+  delay: 3
+  until: _result_update_plugins is not failed
+  ignore_errors: true
+  notify:
+    - restart jenkins

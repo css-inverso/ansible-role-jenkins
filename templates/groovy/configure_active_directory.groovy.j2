@@ -1,0 +1,27 @@
+#!groovy
+import com.google.common.collect.Lists
+import jenkins.model.*
+import hudson.security.*
+import hudson.plugins.active_directory.*
+   
+def instance = Jenkins.getInstance()
+String domain = '{{ jenkins_ad_domain }}'
+String site = '{{ jenkins_ad_site }}'
+String server = '{{ jenkins_ad_server }}'
+String bindName = '{{ jenkins_ad_bindName }}'
+String bindPassword = '{{ jenkins_ad_bindPassword }}'
+String localAdminUser = '{{ jenkins_admin_username }}'
+
+{% if jenkins_ad_cache_enabled %}
+def cache = new CacheConfiguration({{ jenkins_ad_cache_size }}, {{ jenkins_ad_cache_ttl }})
+{% else %}
+def cache = null
+{% endif %}
+
+{#def domains = Lists.newArrayList(new ActiveDirectoryDomain(domain, server, site, bindName, bindPassword, TlsConfiguration.TRUST_ALL_CERTIFICATES))#}
+def domains = Lists.newArrayList(new ActiveDirectoryDomain(domain, server, site, bindName, bindPassword, TlsConfiguration.JDK_TRUSTSTORE))
+
+internalUsersDatabase = new ActiveDirectoryInternalUsersDatabase(localAdminUser)
+adrealm = new ActiveDirectorySecurityRealm(domain, domains, site, bindName, bindPassword, server, GroupLookupStrategy.AUTO, false, true, cache, true, internalUsersDatabase)
+
+instance.setSecurityRealm(adrealm)

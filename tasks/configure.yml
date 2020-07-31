@@ -1,0 +1,82 @@
+---
+
+
+- name: check required variables
+  assert:
+    that:
+      - jenkins_user             | mandatory
+      - jenkins_group            | mandatory
+      - jenkins_home             | mandatory
+      - jenkins_ad_configure     | mandatory
+      - jenkins_proxy_state      in ['present','absent']
+      - jenkins_proxy_name or jenkins_proxy_state == 'absent'
+      - jenkins_proxy_port or jenkins_proxy_state == 'absent'
+  tags: ['varcheck']
+
+- name: ensure corporate proxy is configured
+  template:
+    src: 'groovy/configure_proxy.groovy.j2'
+    dest: '{{ jenkins_home }}/init.groovy.d/configure_proxy.groovy'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  notify: restart jenkins
+
+#- name: Ensure proxy configuration is absent
+#  file:
+#    dest: '{{ jenkins_home }}/init.groovy.d/configure_proxy.groovy'
+#    state: absent
+#  notify: restart jenkins
+#  when: jenkins_proxy_state == 'absent'
+
+- name: Ensure smtp configuration is present
+  template:
+    src: 'groovy/configure_smtp.groovy.j2'
+    dest: '{{ jenkins_home }}/init.groovy.d/configure_smtp.groovy'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  notify: restart jenkins
+
+- name: Ensure jenkins location configuration is present
+  template:
+    src: 'groovy/configure_location.groovy.j2'
+    dest: '{{ jenkins_home }}/init.groovy.d/configure_location.groovy'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  notify: restart jenkins
+
+- name: Ensure CLI Remote configuration is present
+  template:
+    src: 'jenkins.CLI.xml.j2'
+    dest: '{{ jenkins_home }}/jenkins.CLI.xml'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  notify: restart jenkins
+
+- name: Ensure CSRF configuration is present
+  template:
+    src: 'groovy/configure_csrf.groovy.j2'
+    dest: '{{ jenkins_home }}/init.groovy.d/20_configure_csrf.groovy'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  notify: restart jenkins
+
+- name: Ensure SystemProperties configuration is present
+  template:
+    src: 'groovy/configure_systemproperties.groovy.j2'
+    dest: '{{ jenkins_home }}/init.groovy.d/configure_systemproperties.groovy'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  when: jenkins_systemproperties != ''
+  notify: restart jenkins
+
+- name: Ensure Kernel and System settings are present
+  template:
+    src : '{{ item.src }}'
+    dest: '{{ item.dest }}'
+  notify: reload sysconfig
+  with_items:
+    - src: 'etc/security/limits.d/90-jenkins.conf.j2'
+      dest: '/etc/security/limits.d/90-jenkins.conf'
+
+- name: apply handlers
+  meta: flush_handlers

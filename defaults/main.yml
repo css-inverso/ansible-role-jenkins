@@ -1,0 +1,97 @@
+---
+## SVN INFORMATION
+#
+# Revision  :  $Rev: 7034 $
+# Autor     :  $Author: jzi $
+# Datum     :  $Date: 2020-07-24 14:51:10 +0200 (Fr, 24. Jul 2020) $
+# URL       :  $HeadURL: https://repo01.inverso.local/svn/ansible/branches/IWADMIN-2172/roles/roles_inverso/inverso.jenkins/defaults/main.yml $
+# 
+
+jenkins_version                      : ~
+jenkins_default_plugins              :
+  - "active-directory"
+jenkins_plugins                      : '{{ jenkins_default_plugins }}'
+
+# FIXME: the role should not updated plugins by default on each run
+# this is set to 'yes' to preserve the old, known behaviour, but should be 'no' here and explicitly set as playbook extra_var
+jenkins_update_plugins               : 'yes'
+
+jenkins_download_baseurl             : ''
+jenkins_download_file                : 'jenkins_{{ jenkins_version }}'
+jenkins_download_folder              : '/tmp'
+
+jenkins_user                         : 'jenkins'
+jenkins_group                        : 'jenkins'
+
+jenkins_destination                  : '/opt'
+jenkins_dir                          : '{{ jenkins_destination }}/jenkins'
+jenkins_war_file                     : 'jenkins.war'
+
+jenkins_home                         : '/home/{{ jenkins_user }}/.jenkins'
+
+jenkins_local_http_port              : 8080
+jenkins_base_url                     : 'https://{{ inventory_hostname }}{{ jenkins_webappcontextpath }}'
+jenkins_webappcontextpath            : '/jenkins'
+jenkins_httpListenAddress            : '127.0.0.1'
+jenkins_logdir                       : '/var/log/jenkins'
+jenkins_args                         : '--sessionTimeout=720 --logfile={{ jenkins_logdir }}/jenkins.log'
+
+jenkins_admin_username               : ''
+jenkins_admin_password               : ''
+
+# if you install active directory plugin, login with local admin account gets impossible, so an active directory user is needed
+jenkins_ad_admin_username            : ''
+jenkins_ad_admin_password            : ''
+
+# deprecated
+jenkins_proxy_configure              : 'no'
+
+jenkins_proxy_state                  : 'absent'
+jenkins_proxy_name                   : None
+jenkins_proxy_port                   : None
+jenkins_proxy_nonProxyHosts          : None
+jenkins_proxy_username               : None
+jenkins_proxy_password               : None
+
+jenkins_mail_address                 : 'admin@{{ ansible_domain }}'
+
+jenkins_mail_defaultSuffix           : '@me.int'
+jenkins_mail_smtpHost                : 'localhost'
+jenkins_mail_smtpPort                : '25'
+jenkins_mail_useSsl                  : 'false'
+jenkins_mail_useTls                  : 'true'
+
+jenkins_ad_configure                 : 'no'
+jenkins_ad_domain                    : None
+jenkins_ad_site                      : None
+jenkins_ad_server                    : None
+jenkins_ad_bindName                  : None
+jenkins_ad_bindPassword              : None
+jenkins_ad_group_admin               : None
+jenkins_ad_group_developers          : None
+jenkins_ad_group_users               : None
+jenkins_ad_authorizationstrategy     : 'matrix' # matrix | project
+jenkins_ad_allow_anonymous           : 'yes'    # yes | no
+jenkins_ad_cache_enabled             : true
+jenkins_ad_cache_size                : 256
+jenkins_ad_cache_ttl                 : 600
+
+jenkins_plugin_docker_configure      : 'no'
+
+jenkins_jvm_Xmx_memory               : 1024m
+jenkins_java_opts_defaults           : '-DJENKINS_HOME={{ jenkins_home }} -Xmx{{ jenkins_jvm_Xmx_memory }} -Xss512k -XX:-OmitStackTraceInFastThrow -Djenkins.install.runSetupWizard=false -Djavax.net.ssl.trustStore=/etc/pki/ca-trust/extracted/java/cacerts -Dhudson.DNSMultiCast.disabled=true -Dhudson.udp=-1'
+jenkins_java_opts                    : '{{ jenkins_java_opts_defaults }}'
+
+jenkins_systemproperties             : ''
+
+jenkins_java_install_jce             : 'no'   # yes | no
+jenkins_java_lib                     : '/usr/bin/java'
+
+jenkins_api_url                      : 'http://localhost:{{ jenkins_local_http_port }}{{ jenkins_webappcontextpath }}'
+jenkins_cli_cmd                      : 'java -jar {{ jenkins_dir }}/jenkins-cli.jar -s {{ jenkins_api_url }}'
+jenkins_cli_remote_enabled           : 'false'
+
+jenkins_service_state                : 'started'
+jenkins_service_enabled              : 'yes'
+jenkins_service_env:
+  PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:$PATH'

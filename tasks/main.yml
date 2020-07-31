@@ -1,0 +1,218 @@
+---
+ 
+- name: check required variables
+  assert:
+    that:
+      - jenkins_version                  | mandatory
+      - jenkins_user                     | mandatory
+      - jenkins_group                    | mandatory
+      - jenkins_home                     | mandatory
+      - jenkins_ad_configure             | mandatory
+      - jenkins_dir                      | mandatory
+      - jenkins_logdir                   | mandatory
+      - jenkins_destination              | mandatory
+      - jenkins_home                     | mandatory
+      - jenkins_plugins                  is iterable
+      - jenkins_download_baseurl         | mandatory
+      - jenkins_admin_username           | mandatory
+      - jenkins_admin_password           | mandatory
+      - jenkins_local_http_port          | mandatory
+      - jenkins_update_plugins           in ['yes','no']
+      - jenkins_proxy_configure          in ['yes','no']
+      - jenkins_ad_configure             in ['yes','no']
+      - jenkins_ad_allow_anonymous       in ['yes','no']
+      - jenkins_java_install_jce         in ['yes','no']
+      - jenkins_service_enabled          in ['yes','no']
+      - jenkins_ad_authorizationstrategy in ['matrix','project']
+      - jenkins_cli_remote_enabled       in ['false','true'] # these are intentionally strings, and not booleans
+  tags: ['varcheck']
+
+- name: ensure jenkins group exists
+  group: 
+    name: '{{ jenkins_group }}'
+    state: present
+
+- name: ensure jenkins user exists
+  user:
+    name: '{{ jenkins_user }}'
+    system: yes
+    comment: 'Jenkins'
+    state: present
+    createhome: yes
+
+- name: ensure jenkins_logdir exists
+  file:
+    path: '{{ jenkins_logdir }}'
+    state: directory
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+    mode : '0755'
+
+- name: ensure jenkins_dir exists
+  file:
+    path: '{{ jenkins_dir }}'
+    state: directory
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+    mode : '0755'
+  notify: set owner and permissions for jenkins_home
+
+- name: 'download {{ jenkins_download_file }}'
+  get_url:
+    url: '{{ jenkins_download_baseurl }}/{{ jenkins_download_file }}.war'    
+    dest: '{{ jenkins_download_folder }}'
+
+- name: 'ensure jenkins is present in {{ jenkins_dir }}'
+  copy:
+    remote_src: 'yes'
+    src: '{{ jenkins_download_folder }}/{{ jenkins_download_file }}.war'
+    dest: '{{ jenkins_dir }}/{{ jenkins_download_file }}'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+
+- name: 'ensure symlink exists {{ jenkins_dir }}/{{ jenkins_download_file }} -> {{ jenkins_dir }}/{{ jenkins_war_file }}'
+  file:
+    src: '{{ jenkins_dir }}/{{ jenkins_download_file }}'
+    dest: '{{ jenkins_dir }}/{{ jenkins_war_file }}'
+    state: link
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  notify:
+    - restart jenkins
+
+- name: ensure systemd service is available
+  template:
+    src: templates/jenkins.service.j2
+    dest: /etc/systemd/system/jenkins.service
+  notify:
+    - systemctl_daemon-reload
+    - restart jenkins
+
+- name: ensure jenkins_home exists
+  file:
+    path: '{{ jenkins_home }}'
+    state: directory
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+    mode: '0755'
+
+- name: ensure jenkins_home/init.groovy.d exists
+  file:
+    path: '{{ jenkins_home }}/init.groovy.d'
+    state: directory
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+    mode: '0755'
+  notify:
+    - configure default users
+    - restart jenkins
+
+- name: ensure app server creates jenkins base config
+  meta: flush_handlers
+
+- name: Ensure jenkins is up and running
+  systemd:
+    name: 'jenkins'
+    state: 'started'
+
+- name: wait until base-config is set up by jenkins service
+  stat:
+    path: '{{ jenkins_home }}'
+  register: directory_status
+  until: directory_status.stat.isdir is defined and directory_status.stat.isdir
+  retries: 20
+  delay: 3
+
+- name: Get the jenkins-cli jarfile from the Jenkins server
+  get_url:
+    url: '{{ jenkins_api_url }}/jnlpJars/jenkins-cli.jar'
+    dest: '{{ jenkins_dir }}'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  register: _result_jarfile_get
+  until: "'OK' in _result_jarfile_get.msg or 'file already exists' in _result_jarfile_get.msg"
+  retries: 8
+  delay: 10
+
+- name: Remove Jenkins security init scripts after first startup.
+  file:
+    path: '{{ jenkins_home }}/init.groovy.d/10_update_admin_password.groovy'
+    state: absent
+
+- name: generate jenkins crumb
+  include: api_generate_crumb.yml
+  tags: ['jenkins.plugins']
+
+- name: generate jenkins admin api token
+  include: admin_api_token.yml
+  tags: ['jenkins.plugins']
+
+- name: check for running builds
+  uri:
+    url: '{{ jenkins_api_url }}/computer/api/json?tree=busyExecutors,computer'
+    force_basic_auth: yes
+    user: '{{ jenkins_admin_username }}'
+    password: '{{ jenkins_admin_password }}'
+    method: GET
+    headers: '{{ jenkins_crumb_header }}'
+    status_code: 200
+  register: _return_running_builds
+  retries: 5
+  delay: 3
+  until: _return_running_builds is not failed
+  tags: ['jenkins.plugins']
+
+- debug: var=_return_running_builds
+  tags: ['jenkins.plugins']
+
+- name: 'end playbook for {{ inventory_hostname }} as it is running build jobs right now'
+  meta: end_host
+  when: _return_running_builds.json.busyExecutors | default(0) | int > 0 #or _return_running_builds.json.computer | default([]) | length | int > 1
+  tags: ['jenkins.plugins']
+
+- name: ensure jenkins is in maintenance mode
+  uri:
+    url: '{{ jenkins_api_url }}/quietDown'
+    force_basic_auth: yes
+    user: '{{ jenkins_admin_username }}'
+    password: '{{ jenkins_admin_password }}'
+    method: POST
+    headers: '{{ jenkins_crumb_header }}'
+    status_code: 302
+  register: _return_maintenance_mode
+  retries: 5
+  delay: 3
+  until: _return_maintenance_mode is not failed
+  tags: ['jenkins.plugins']
+
+- include: configure.yml 
+  tags: jenkins.configure
+  
+- include: plugins.yml 
+  tags: ['jenkins.plugins']
+
+- include: configure_plugins.yml
+  tags: jenkins.configure_plugins
+
+- name: ensure jenkins is enabled or started
+  systemd:
+    name: 'jenkins'
+    state: '{{ jenkins_service_state }}'
+    enabled: '{{ jenkins_service_enabled }}'
+  notify: systemctl daemon-reload
+
+- name: ensure jenkins maintenance mode is disabled
+  uri:
+    url: '{{ jenkins_api_url }}/cancelQuietDown'
+    force_basic_auth: yes
+    user: '{{ jenkins_admin_username }}'
+    password: '{{ jenkins_admin_password }}'
+    method: POST
+    headers: '{{ jenkins_crumb_header }}'
+    status_code: 302
+  register: _return_maintenance_mode
+  retries: 5
+  delay: 3
+  until: _return_maintenance_mode is not failed
+  when: jenkins_service_state != 'stopped'
+  tags: ['jenkins.plugins']
