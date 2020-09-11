@@ -61,6 +61,8 @@
   get_url:
     url: '{{ jenkins_download_baseurl }}/{{ jenkins_download_file }}'    
     dest: '{{ jenkins_download_folder }}'
+  notify:
+    - restart jenkins
 
 - name: 'ensure jenkins is present in {{ jenkins_dir }}'
   copy:
