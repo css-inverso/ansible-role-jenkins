@@ -38,7 +38,9 @@
     system: yes
     comment: 'Jenkins'
     state: present
-    createhome: yes
+    create_home: yes
+    home: '{{ jenkins_user_home | default(omit) }}'
+    move_home: yes
 
 - name: ensure jenkins_logdir exists
   file:
