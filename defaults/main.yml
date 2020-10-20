@@ -14,7 +14,7 @@ jenkins_download_file                : 'jenkins_{{ jenkins_version }}.war'
 jenkins_download_folder              : '/tmp'
 
 jenkins_user                         : 'jenkins'
-jenkins_user_home                    :
+jenkins_user_home                    : '/home/{{ jenkins_user }}'
 jenkins_group                        : 'jenkins'
 
 jenkins_destination                  : '/opt'
