@@ -24,6 +24,11 @@ List of plugin short names to install in this jenkins instance
 Set to 'yes' to update already installed plugins.
 
 
+    jenkins_plugin_blacklist :
+      - 'repository-connector-plugin'
+Define a list of plugins, which are not allowed to be updated
+This allows skipping plugin updates when the updated version is known to be broken
+
     jenkins_download_baseurl: '' (mandatory)
 URL to a directory containing jenkins .war files
 

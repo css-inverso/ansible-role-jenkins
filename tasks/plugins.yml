@@ -41,7 +41,7 @@
 - name: install/update plugins
   shell: "{{ jenkins_cli_cmd }} -auth {{ jenkins_admin_token }} install-plugin {{ item }}"
   when: _result_plugins_installed.stdout.find( item ) == -1
-  with_items: '{{ jenkins_plugins }}'
+  with_items: '{{ _actual_plugins_to_install }}'
   register: _plugin_install_result
   retries: 3
   delay: 3
@@ -49,15 +49,23 @@
   ignore_errors: yes
   notify:
     - restart jenkins
+  vars:
+    _actual_plugins_to_install: '{{ jenkins_plugins | difference(jenkins_plugin_blacklist) }}'
 
 - name: list plugins to be updated
   shell: "{{ jenkins_cli_cmd }} -auth {{ jenkins_admin_token }} list-plugins | grep ')$' | cut -f 1 -d ' ' | awk 1 ORS=' '"
   register: _result_plugin_updates
   changed_when: false
 
+- debug:
+    var: _actual_plugins_to_update
+  vars:
+    _available_updates: '{{ _result_plugin_updates.stdout.split() }}'
+    _actual_plugins_to_update: '{{ _available_updates | difference(jenkins_plugin_blacklist) }}'
+
 - name: update plugins
   shell: "{{ jenkins_cli_cmd }} -auth {{ jenkins_admin_token }} install-plugin {{ item }}"
-  with_items: '{{ _result_plugin_updates.stdout.split() }}'
+  with_items: '{{ _actual_plugins_to_update }}'
   when: _result_plugin_updates.stdout != '' and jenkins_update_plugins == 'yes'
   register: _result_update_plugins
   retries: 3
@@ -66,3 +74,6 @@
   ignore_errors: true
   notify:
     - restart jenkins
+  vars:
+    _available_updates: '{{ _result_plugin_updates.stdout.split() }}'
+    _actual_plugins_to_update: '{{ _available_updates | difference(jenkins_plugin_blacklist) }}'

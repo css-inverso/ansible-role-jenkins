@@ -5,6 +5,8 @@ jenkins_default_plugins              :
   - "active-directory"
 jenkins_plugins                      : '{{ jenkins_default_plugins }}'
 
+jenkins_plugin_blacklist             : []
+
 # FIXME: the role should not update plugins by default on each run
 # this is set to 'yes' to preserve the old, known behaviour, but should be 'no' here and explicitly set as playbook extra_var
 jenkins_update_plugins               : 'yes'
