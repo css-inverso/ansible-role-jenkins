@@ -90,4 +90,4 @@ jenkins_cli_remote_enabled           : 'false'
 jenkins_service_state                : 'started'
 jenkins_service_enabled              : 'yes'
 jenkins_service_env:
-  PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:$PATH'
+  PATH+EXTRA: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin'
