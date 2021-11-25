@@ -91,3 +91,12 @@ jenkins_service_state                : 'started'
 jenkins_service_enabled              : 'yes'
 jenkins_service_env:
   PATH+EXTRA: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin'
+
+jenkins_docker_cloud: []
+#  - registry: 'docker-hosted-jenkins-snapshot.nexusops.inverso.local'
+#    tcp_url: 'tcp://slave-build01.inverso.local:4243'
+#    name: 'inverso-docker-cloud-01'
+#
+#  - registry: 'docker-hosted-jenkins-snapshot.nexusops.inverso.local'
+#    tcp_url: 'tcp://slave-build01.inverso.local:4243'
+#    name: 'inverso-docker-cloud-02'

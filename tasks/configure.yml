@@ -69,6 +69,24 @@
   when: jenkins_systemproperties != ''
   notify: restart jenkins
 
+- name: Ensure docker node configuration is present
+  template:
+    src: 'groovy/configure_docker_cloud.groovy.j2'
+    dest: '{{ jenkins_home }}/init.groovy.d/configure_docker_cloud_{{ idx }}.groovy'
+    owner: '{{ jenkins_user }}'
+    group: '{{ jenkins_group }}'
+  when:
+    - jenkins_docker_cloud is defined and jenkins_docker_cloud is iterable
+  vars:
+    jenkins_docker_cloud_tcp_url: '{{ item.tcp_url }}'
+    jenkins_docker_cloud_name: '{{ item.name }}'
+    jenkins_docker_registry: '{{ item.registry }}'
+  loop: '{{ jenkins_docker_cloud }}'
+  loop_control:
+    index_var: idx
+  notify: restart jenkins
+
+
 - name: Ensure Kernel and System settings are present
   template:
     src : '{{ item.src }}'
