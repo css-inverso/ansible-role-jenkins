@@ -7,6 +7,7 @@ import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint
 import groovy.transform.Field
 import static java.util.stream.Collectors.toList
 
+@Field
 String dockerHostUrl = '{{ jenkins_docker_cloud_tcp_url }}'
 String cloudName = '{{ jenkins_docker_cloud_name }}'
 
@@ -109,7 +110,8 @@ private List<DockerTemplate> getTemplates(List<LinkedHashMap<String, Serializabl
                 name          : it.name,
                 pullTimeout   : 300,
                 pullStrategy  : DockerImagePullStrategy.PULL_ALWAYS,
-                removeVolumes : true
+                removeVolumes : true,
+                environment   : ["DOCKER_HOST=${dockerHostUrl}"]
         ]
     }.map {
         DockerTemplateBase templateBase = new DockerTemplateBase(it.image as String)
