@@ -7,7 +7,6 @@ import org.jenkinsci.plugins.docker.commons.credentials.DockerServerEndpoint
 import groovy.transform.Field
 import static java.util.stream.Collectors.toList
 
-@Field
 String dockerHostUrl = '{{ jenkins_docker_cloud_tcp_url }}'
 String cloudName = '{{ jenkins_docker_cloud_name }}'
 
@@ -79,15 +78,15 @@ def images = [
 def cloudParameters = [
         // serverUrl and name are required.
         // everything else is optional
-        serverUrl     : dockerHostUrl,
-        name          : cloudName,
-        containerCap  : 0, // 0 means no cap
+        serverUrl       : dockerHostUrl,
+        name            : cloudName,
+        containerCap    : 0, // 0 means no cap
         // credentialsId:            '',
-        connectTimeout: 60,
-        readTimeout   : 60,
+        connectTimeout  : 60,
+        readTimeout     : 60,
         // version:                  '',
         // dockerHostname:           '',
-        // exposeDockerHost:         false,
+        exposeDockerHost: true,
         // disabled:                 false,
         // errorDuration:            (Integer)null,
 ]
@@ -110,8 +109,7 @@ private List<DockerTemplate> getTemplates(List<LinkedHashMap<String, Serializabl
                 name          : it.name,
                 pullTimeout   : 300,
                 pullStrategy  : DockerImagePullStrategy.PULL_ALWAYS,
-                removeVolumes : true,
-                environment   : ["DOCKER_HOST=${dockerHostUrl}"]
+                removeVolumes : true
         ]
     }.map {
         DockerTemplateBase templateBase = new DockerTemplateBase(it.image as String)
